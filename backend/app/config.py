@@ -15,6 +15,9 @@ class Settings(BaseSettings):
     postgres_user: str = "postgres"
     postgres_password: str = "postgres"
     postgres_db: str = "compliance_copilot"
+    llm_provider: str = "gemini"
+    groq_generation_model: str = "openai/gpt-oss-120b"
+
 
 
     # write rules telling Settings() how to operate

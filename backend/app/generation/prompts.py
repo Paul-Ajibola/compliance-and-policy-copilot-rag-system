@@ -10,6 +10,7 @@ Rules:
 - Every factual claim must be followed by a citation marker like [1] or [2] referencing the passage number it came from.
 - If the passages do not contain enough information to answer the question, say so explicitly. Do not guess or use outside knowledge.
 - Be concise and direct. Do not repeat the passages verbatim — synthesize them into a clear answer.
+- Write plain text only, with no markdown formatting. Cite passages with ASCII square brackets exactly like [1], never with other bracket characters.
 """
 
 
@@ -27,3 +28,5 @@ def build_prompt(question: str, context_chunks: list[dict]) -> str:
         f"QUESTION: {question}\n\n"
         f"ANSWER:"
     )
+
+
