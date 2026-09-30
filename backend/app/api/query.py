@@ -1,11 +1,10 @@
 """
-The /query endpoint: runs the confidence gate first (cheap — no LLM
-call), and only proceeds to generation if the gate is confident. This
-is also a direct cost-control measure: your roadmap's target metric of
-"Cost per Query < $0.018" depends on NOT calling the LLM on questions
-the gate already knows it can't answer well.
+The /query endpoint: runs the confidence gate first (cheap, no LLM call),
+and only proceeds to generation if the gate is confident.
 """
 import json
+import logging
+import traceback
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
@@ -15,11 +14,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.confidence.gate import evaluate_query
 from app.generation.generator import stream_answer, build_citations
-import logging, traceback
-
 
 logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -33,7 +29,7 @@ def _sse_event(event: str, data: dict) -> str:
 
 @router.post("/query")
 async def query(request: QueryRequest, session: AsyncSession = Depends(get_session)):
-        async def event_stream():
+    async def event_stream():
         try:
             gate_result = await evaluate_query(session, request.question)
         except Exception as e:
@@ -60,3 +56,5 @@ async def query(request: QueryRequest, session: AsyncSession = Depends(get_sessi
             return
 
         yield _sse_event("done", {})
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
