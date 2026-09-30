@@ -40,8 +40,5 @@ services:
     plan: free
     region: ohio
     envVars:
-      - key: BACKEND_INTERNAL_URL
-        fromService:
-          type: web
-          name: compliance-copilot-backend
-          property: host
+      - key: BACKEND_URL
+        sync: false

@@ -15,6 +15,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_session
 from app.confidence.gate import evaluate_query
 from app.generation.generator import stream_answer, build_citations
+import logging, traceback
+
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -29,8 +33,13 @@ def _sse_event(event: str, data: dict) -> str:
 
 @router.post("/query")
 async def query(request: QueryRequest, session: AsyncSession = Depends(get_session)):
-    async def event_stream():
-        gate_result = await evaluate_query(session, request.question)
+        async def event_stream():
+        try:
+            gate_result = await evaluate_query(session, request.question)
+        except Exception as e:
+            logger.error("Gate/retrieval failed:\n%s", traceback.format_exc())
+            yield _sse_event("error", {"message": f"retrieval failed: {type(e).__name__}: {e}"})
+            return
 
         if not gate_result.confident:
             yield _sse_event("refused", {
@@ -46,10 +55,8 @@ async def query(request: QueryRequest, session: AsyncSession = Depends(get_sessi
             async for token in stream_answer(request.question, gate_result.all_results):
                 yield _sse_event("token", {"text": token})
         except Exception as e:
-            yield _sse_event("error", {"message": str(e)})
+            logger.error("Generation failed:\n%s", traceback.format_exc())
+            yield _sse_event("error", {"message": f"generation failed: {type(e).__name__}: {e}"})
             return
 
         yield _sse_event("done", {})
-
-    return StreamingResponse(event_stream(), media_type="text/event-stream")
-    
